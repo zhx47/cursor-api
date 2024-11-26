@@ -1,0 +1,22 @@
+{
+  "name": "cursor-api",
+  "version": "1.0.0",
+  "description": "cursor 逆向API",
+  "author": "zhx47",
+  "private": false,
+  "main": "index.js",
+  "url": "https://github.com/zhx47/cursor-api",
+  "license": "MIT",
+  "dependencies": {
+    "express": "4.21.1",
+    "protobufjs": "^7.4.0",
+    "uuid": "11.0.3"
+  },
+  "scripts": {
+    "format": "prettier --write \"src/**/*.js\"",
+    "start": "node src/index.js"
+  },
+  "devDependencies": {
+    "prettier": "^3.4.0"
+  }
+}

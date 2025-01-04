@@ -1,11 +1,11 @@
 {
   "name": "cursor-api",
   "version": "1.0.0",
-  "description": "cursor 逆向API",
+  "description": "カーソルのリバースエンジニアリングAPI",
   "author": "zhx47",
   "private": false,
   "main": "index.js",
-  "url": "https://github.com/zhx47/cursor-api",
+  "url": "https://github.com/zhx47/cursor-api", 
   "license": "MIT",
   "dependencies": {
     "express": "4.21.1",
@@ -14,9 +14,11 @@
   },
   "scripts": {
     "format": "prettier --write \"src/**/*.js\"",
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "dev": "nodemon src/index.js"
   },
   "devDependencies": {
-    "prettier": "^3.4.0"
+    "prettier": "^3.4.0",
+    "nodemon": "^3.0.3"
   }
 }

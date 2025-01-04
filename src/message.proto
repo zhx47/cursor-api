@@ -3,49 +3,49 @@ syntax = "proto3";
 message ChatMessage {
   message FileContent {
     message Position {
-      int32 line = 1;
-      int32 column = 2;
+      int32 line = 1;    // 行番号
+      int32 column = 2;  // 列番号
     }
     message Range {
-      Position start = 1;
-      Position end = 2;
+      Position start = 1;  // 開始位置
+      Position end = 2;    // 終了位置
     }
 
-    string filename = 1;
-    string content = 2;
-    Position position = 3;
-    string language = 5;
-    Range range = 6;
-    int32 length = 8;
-    int32 type = 9;
-    int32 error_code = 11;
+    string filename = 1;    // ファイル名
+    string content = 2;     // ファイルの内容
+    Position position = 3;  // 位置情報
+    string language = 5;    // プログラミング言語
+    Range range = 6;       // 範囲情報
+    int32 length = 8;      // 長さ
+    int32 type = 9;        // タイプ
+    int32 error_code = 11; // エラーコード
   }
 
   message UserMessage {
-    string content = 1;
-    int32 role = 2;
-    string message_id = 13;
+    string content = 1;     // メッセージ内容
+    int32 role = 2;        // ユーザーの役割
+    string message_id = 13; // メッセージID
   }
 
   message Instructions {
-    string instruction = 1;
+    string instruction = 1; // 指示内容
   }
 
   message Model {
-    string name = 1;
-    string empty = 4;
+    string name = 1;    // モデル名
+    string empty = 4;   // 空フィールド
   }
 
-  // repeated FileContent files = 1;
-  repeated UserMessage messages = 2;
-  Instructions instructions = 4;
-  string projectPath = 5;
-  Model model = 7;
-  string requestId = 9;
-  string summary = 11; // 或许是空的，描述会话做了什么事情，但是不是标题 或许可以当作额外的设定来用
-  string conversationId = 15; // 又来一个uuid
+  // repeated FileContent files = 1;  // ファイル一覧（コメントアウト）
+  repeated UserMessage messages = 2;   // メッセージ一覧
+  Instructions instructions = 4;       // 指示情報
+  string projectPath = 5;             // プロジェクトパス
+  Model model = 7;                    // モデル情報
+  string requestId = 9;               // リクエストID
+  string summary = 11;                // 会話の要約（空の可能性あり）。会話の内容を説明するが、タイトルではない。追加設定として使用可能
+  string conversationId = 15;         // 会話ID（UUID）
 }
 
 message ResMessage {
-  string msg = 1;
+  string msg = 1;  // レスポンスメッセージ
 }

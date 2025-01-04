@@ -8,8 +8,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.post('/v1/chat/completions', async (req, res) => {
-  // o1开头的模型，不支持流式输出
-  if (req.body.model.startsWith('o1-') && req.body.stream) {
+  // モデル名の存在チェックを追加
+  if (req.body?.model?.startsWith('o1-') && req.body.stream) {
     return res.status(400).json({
       error: 'Model not supported stream',
     });

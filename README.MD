@@ -1,38 +1,64 @@
 # cursor-api
 
-将 Cursor 编辑器转换为 OpenAI 兼容的 API 接口服务。
+Cursor エディタを OpenAI 互換の API インターフェースサービスに変換します。
 
-## 项目简介
+## プロジェクト概要
 
-本项目提供了一个代理服务，可以将 Cursor 编辑器的 AI 能力转换为与 OpenAI API 兼容的接口，让您能够在其他应用中复用 Cursor 的 AI 能力。
+このプロジェクトは、Cursor エディタの AI 機能を OpenAI API 互換のインターフェースに変換するプロキシサービスを提供し、他のアプリケーションで Cursor の AI 機能を再利用できるようにします。
 
-## 使用前准备
+## 使用前の準備
 
-1. 访问 [www.cursor.com](https://www.cursor.com) 并完成注册登录（赠送 500 次快速响应，可通过删除账号再注册重置）
-2. 在浏览器中打开开发者工具（F12）
-3. 找到 应用-Cookies 中名为 `WorkosCursorSessionToken` 的值并保存(相当于 openai 的密钥)
+1. [www.cursor.com](https://www.cursor.com) にアクセスして登録・ログインを完了させます（無料版Hobbyプランでは以下が利用可能）
+   - 2000回のコンプリーション
+   - 50回の低速プレミアムリクエスト
+2. ブラウザで開発者ツール（F12）を開きます
+3. アプリケーション-Cookies から `WorkosCursorSessionToken` の値を見つけて保存します（OpenAI のAPIキーに相当）
 
-## 接口说明
+## API 仕様
 
-### 基础配置
+### 基本設定
 
-- 接口地址：`http://localhost:3000/v1/chat/completions`
-- 请求方法：POST
-- 认证方式：Bearer Token（使用 WorkosCursorSessionToken 的值，支持英文逗号分隔的 key 入参）
+- エンドポイント：`http://localhost:3000/v1/chat/completions`
+- リクエストメソッド：POST
+- 認証方式：Bearer Token（WorkosCursorSessionToken の値を使用、カンマ区切りでの複数キー入力に対応）
 
-### 请求格式和响应格式参考 openai
+### リクエスト形式とレスポンス形式は OpenAI に準拠
 
-## 生产环境部署
+リクエスト例：
+```json
+{
+  "model": "claude-3.5-soonet",
+  "messages": [
+    {
+      "role": "user",
+      "content": "こんにちは"
+    }
+  ],
+  "stream": false
+}
+```
 
-### 方式二：docker 部署
+必須フィールド：
+- `model`: 使用するモデル名
+- `messages`: メッセージの配列
+
+## 本番環境へのデプロイ
+
+### 方法2：Docker でのデプロイ
 
 ```bash
 docker run -d --name cursor-api -e x-cursor-checksum=xxxxxx -p 3000:3000 zhx47/cursor-api:latest
 ```
 
-> 如果不需要执行checksum可以不设置，优先级为req header中的x-cursor-checksum > 环境变量中的x-cursor-checksum > 随机生成
+> x-cursor-checksumは、Cursorのリクエストで使用される認証用のチェックサム値です。
+> - ブラウザの開発者ツールのNetworkタブで、Cursorへのリクエストヘッダーから `x-cursor-checksum` の値を確認できます
+> - 設定は任意です。設定しない場合は自動的にランダムな値が生成されます
+> - 優先順位：
+>   1. リクエストヘッダーの x-cursor-checksum
+>   2. 環境変数の x-cursor-checksum
+>   3. ランダム生成された値
 
-## 本地开发
+## ローカル開発
 
 ```bash
 cd cursor-api
@@ -40,15 +66,17 @@ npm install
 npm run dev
 ```
 
-## 注意事项
+## 注意事項
 
-- 请妥善保管您的 WorkosCursorSessionToken，不要泄露给他人
-- 本项目仅供学习研究使用，请遵守 Cursor 的使用条款
+- WorkosCursorSessionToken は他人に漏らさないよう、適切に管理してください
+- このプロジェクトは学習・研究目的のみで使用し、Cursor の利用規約を遵守してください
+- プレミアムモデル（GPT-4、GPT-4o、Claude 3.5 Sonnet）の使用には制限があります
+- 制限を超えた場合、アップグレードを求められる場合があります
 
-## 原始项目
+## オリジナルプロジェクト
 
-- 本项目基于 [cursorToApi](https://github.com/luolazyandlazy/cursorToApi) 项目进行优化，感谢原作者的贡献
+- このプロジェクトは [cursorToApi](https://github.com/luolazyandlazy/cursorToApi) プロジェクトを最適化したものです。原作者の貢献に感謝いたします
 
-## 许可证
+## ライセンス
 
 MIT License

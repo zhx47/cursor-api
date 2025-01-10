@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const zlib = require('zlib');
 const $root = require('./message.js');
+const crypto = require('crypto');
 
 const regex = /<\|BEGIN_SYSTEM\|>.*?<\|END_SYSTEM\|>.*?<\|BEGIN_USER\|>.*?<\|END_USER\|>/s;
 
@@ -104,8 +105,48 @@ function getRandomIDPro({ size, dictType, customDict }) {
   return random;
 }
 
+function generateHashed64Hex(input, salt = '') {
+  const hash = crypto.createHash('sha256');
+  hash.update(input + salt);
+  return hash.digest('hex');
+}
+
+function obfuscateBytes(byteArray) {
+  let t = 165;
+  for (let r = 0; r < byteArray.length; r++) {
+    byteArray[r] = (byteArray[r] ^ t) + (r % 256);
+    t = byteArray[r];
+  }
+  return byteArray;
+}
+
+function generateCursorChecksum(token) {
+  // 生成machineId和macMachineId
+  const machineId = generateHashed64Hex(token, 'machineId');
+  const macMachineId = generateHashed64Hex(token, 'macMachineId');
+
+  // 获取时间戳并转换为字节数组
+  const timestamp = Math.floor(Date.now() / 1e6);
+  const byteArray = new Uint8Array([
+    (timestamp >> 40) & 255,
+    (timestamp >> 32) & 255,
+    (timestamp >> 24) & 255,
+    (timestamp >> 16) & 255,
+    (timestamp >> 8) & 255,
+    255 & timestamp,
+  ]);
+
+  // 混淆字节数组并进行base64编码
+  const obfuscatedBytes = obfuscateBytes(byteArray);
+  const encodedChecksum = Buffer.from(obfuscatedBytes).toString('base64');
+
+  // 组合最终的checksum
+  return `${encodedChecksum}${machineId}/${macMachineId}`;
+}
+
 module.exports = {
   stringToHex,
   chunkToUtf8String,
   getRandomIDPro,
+  generateCursorChecksum,
 };

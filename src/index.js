@@ -1,11 +1,11 @@
 const express = require('express');
 const { v4: uuidv4 } = require('uuid');
-const { stringToHex, chunkToUtf8String, getRandomIDPro } = require('./utils.js');
+const crypto = require('crypto');
+const { stringToHex, chunkToUtf8String, getRandomIDPro, generateCursorChecksum } = require('./utils.js');
 const app = express();
 
-// 中间件配置
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 app.post('/v1/chat/completions', async (req, res) => {
   // o1开头的模型，不支持流式输出
@@ -15,20 +15,13 @@ app.post('/v1/chat/completions', async (req, res) => {
     });
   }
 
-  let currentKeyIndex = 0;
   try {
     const { model, messages, stream = false } = req.body;
     let authToken = req.headers.authorization?.replace('Bearer ', '');
     // 处理逗号分隔的密钥
     const keys = authToken.split(',').map((key) => key.trim());
-    if (keys.length > 0) {
-      // 确保 currentKeyIndex 不会越界
-      if (currentKeyIndex >= keys.length) {
-        currentKeyIndex = 0;
-      }
-      // 使用当前索引获取密钥
-      authToken = keys[currentKeyIndex];
-    }
+    authToken = keys[Math.floor(Math.random() * array.length)]
+
     if (authToken && authToken.includes('%3A%3A')) {
       authToken = authToken.split('%3A%3A')[1];
     }
@@ -40,11 +33,10 @@ app.post('/v1/chat/completions', async (req, res) => {
 
     const hexData = await stringToHex(messages, model);
 
-    // 获取checksum，req header中传递优先，环境变量中的等级第二，最后随机生成
-    const checksum =
-      req.headers['x-cursor-checksum'] ??
-      process.env['x-cursor-checksum'] ??
-      `zo${getRandomIDPro({ dictType: 'max', size: 6 })}${getRandomIDPro({ dictType: 'max', size: 64 })}/${getRandomIDPro({ dictType: 'max', size: 64 })}`;
+    // 获取 checksum
+    const checksum = req.headers['x-cursor-checksum'] 
+      ?? process.env['x-cursor-checksum'] 
+      ?? generateCursorChecksum(authToken.trim());
 
     const response = await fetch('https://api2.cursor.sh/aiserver.v1.AiService/StreamChat', {
       method: 'POST',
@@ -63,6 +55,10 @@ app.post('/v1/chat/completions', async (req, res) => {
         Host: 'api2.cursor.sh',
       },
       body: hexData,
+      timeout: {
+        connect: 5000,    // 连接超时 5 秒
+        read: 30000       // 读取超时 30 秒
+      }
     });
 
     if (stream) {
@@ -72,80 +68,99 @@ app.post('/v1/chat/completions', async (req, res) => {
 
       const responseId = `chatcmpl-${uuidv4()}`;
 
-      // 使用封装的函数处理 chunk
-      for await (const chunk of response.body) {
-        const text = await chunkToUtf8String(chunk);
+      try {
+        for await (const chunk of response.body) {
+          const text = await chunkToUtf8String(chunk);
 
-        if (text.length > 0) {
-          res.write(
-            `data: ${JSON.stringify({
-              id: responseId,
-              object: 'chat.completion.chunk',
-              created: Math.floor(Date.now() / 1000),
-              model,
-              choices: [
-                {
-                  index: 0,
-                  delta: {
-                    content: text,
+          if (text.length > 0) {
+            res.write(
+              `data: ${JSON.stringify({
+                id: responseId,
+                object: 'chat.completion.chunk',
+                created: Math.floor(Date.now() / 1000),
+                model: req.body.model,
+                choices: [
+                  {
+                    index: 0,
+                    delta: {
+                      content: text,
+                    },
                   },
-                },
-              ],
-            })}\n\n`,
-          );
+                ],
+              })}\n\n`
+            );
+          }
         }
+      } catch (streamError) {
+        console.error('Stream error:', streamError);
+        if (streamError.name === 'TimeoutError') {
+          res.write(`data: ${JSON.stringify({ error: 'Server response timeout' })}\n\n`);
+        } else {
+          res.write(`data: ${JSON.stringify({ error: 'Stream processing error' })}\n\n`);
+        }
+      } finally {
+        res.write('data: [DONE]\n\n');
+        res.end();
       }
-
-      res.write('data: [DONE]\n\n');
-      return res.end();
     } else {
-      let text = '';
-      // 在非流模式下也使用封装的函数
-      for await (const chunk of response.body) {
-        text += await chunkToUtf8String(chunk);
-      }
-      // 对解析后的字符串进行进一步处理
-      text = text.replace(/^.*<\|END_USER\|>/s, '');
-      text = text.replace(/^\n[a-zA-Z]?/, '').trim();
-      // console.log(text)
+      try {
+        let text = '';
+        for await (const chunk of response.body) {
+          text += await chunkToUtf8String(chunk);
+        }
+        // 对解析后的字符串进行进一步处理
+        text = text.replace(/^.*<\|END_USER\|>/s, '');
+        text = text.replace(/^\n[a-zA-Z]?/, '').trim();
+        // console.log(text)
 
-      return res.json({
-        id: `chatcmpl-${uuidv4()}`,
-        object: 'chat.completion',
-        created: Math.floor(Date.now() / 1000),
-        model,
-        choices: [
-          {
-            index: 0,
-            message: {
-              role: 'assistant',
-              content: text,
+        return res.json({
+          id: `chatcmpl-${uuidv4()}`,
+          object: 'chat.completion',
+          created: Math.floor(Date.now() / 1000),
+          model,
+          choices: [
+            {
+              index: 0,
+              message: {
+                role: 'assistant',
+                content: text,
+              },
+              finish_reason: 'stop',
             },
-            finish_reason: 'stop',
+          ],
+          usage: {
+            prompt_tokens: 0,
+            completion_tokens: 0,
+            total_tokens: 0,
           },
-        ],
-        usage: {
-          prompt_tokens: 0,
-          completion_tokens: 0,
-          total_tokens: 0,
-        },
-      });
+        });
+      } catch (error) {
+        console.error('Non-stream error:', error);
+        if (error.name === 'TimeoutError') {
+          return res.status(408).json({ error: 'Server response timeout' });
+        }
+        throw error;  // 让外层错误处理来处理其他类型的错误
+      }
     }
   } catch (error) {
     console.error('Error:', error);
     if (!res.headersSent) {
+      const errorMessage = {
+        error: error.name === 'TimeoutError' ? 'Request timeout' : 'Internal server error'
+      };
+
       if (req.body.stream) {
-        res.write(`data: ${JSON.stringify({ error: 'Internal server error' })}\n\n`);
+        res.write(`data: ${JSON.stringify(errorMessage)}\n\n`);
         return res.end();
       } else {
-        return res.status(500).json({ error: 'Internal server error' });
+        return res.status(error.name === 'TimeoutError' ? 408 : 500).json(errorMessage);
       }
     }
   }
 });
 
 // 启动服务器
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3010;
 app.listen(PORT, () => {
   console.log(`服务器运行在端口 ${PORT}`);
 });

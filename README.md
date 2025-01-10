@@ -22,22 +22,12 @@
 
 ### 请求格式和响应格式参考 openai
 
-## 生产环境部署
-
-### 方式二：docker 部署
-
-```bash
-docker run -d --name cursor-api -e x-cursor-checksum=xxxxxx -p 3000:3000 zhx47/cursor-api:latest
-```
-
-> 如果不需要执行checksum可以不设置，优先级为req header中的x-cursor-checksum > 环境变量中的x-cursor-checksum > 随机生成
-
 ## 本地开发
 
-```bash
+```
 cd cursor-api
 npm install
-npm run dev
+npm run start
 ```
 
 ## 注意事项

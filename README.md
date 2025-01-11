@@ -1,4 +1,4 @@
-# cursor-api
+# Cursor To OpenAI
 
 将 Cursor 编辑器转换为 OpenAI 兼容的 API 接口服务。
 
@@ -16,7 +16,7 @@
 
 ### 基础配置
 
-- 接口地址：`http://localhost:3000/v1/chat/completions`
+- 接口地址：`http://localhost:3010/v1/chat/completions`
 - 请求方法：POST
 - 认证方式：Bearer Token（使用 WorkosCursorSessionToken 的值，支持英文逗号分隔的 key 入参）
 

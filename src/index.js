@@ -20,7 +20,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     let bearerToken = req.headers.authorization?.replace('Bearer ', '');
     // 处理逗号分隔的密钥
     const keys = authToken.split(',').map((key) => key.trim());
-    let authToken = keys[Math.floor(Math.random() * authToken.length)]
+    let authToken = keys[Math.floor(Math.random() * keys.length)]
 
     if (authToken && authToken.includes('%3A%3A')) {
       authToken = authToken.split('%3A%3A')[1];

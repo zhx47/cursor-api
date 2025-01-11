@@ -18,8 +18,9 @@ app.post('/v1/chat/completions', async (req, res) => {
   try {
     const { model, messages, stream = false } = req.body;
     let bearerToken = req.headers.authorization?.replace('Bearer ', '');
-    // 处理逗号分隔的密钥
+
     const keys = authToken.split(',').map((key) => key.trim());
+    // Random choose one key to use
     let authToken = keys[Math.floor(Math.random() * keys.length)]
 
     if (authToken && authToken.includes('%3A%3A')) {

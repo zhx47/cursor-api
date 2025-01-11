@@ -17,14 +17,18 @@ app.post('/v1/chat/completions', async (req, res) => {
 
   try {
     const { model, messages, stream = false } = req.body;
-    let authToken = req.headers.authorization?.replace('Bearer ', '');
+    let bearerToken = req.headers.authorization?.replace('Bearer ', '');
     // 处理逗号分隔的密钥
     const keys = authToken.split(',').map((key) => key.trim());
-    authToken = keys[Math.floor(Math.random() * array.length)]
+    let authToken = keys[Math.floor(Math.random() * authToken.length)]
 
     if (authToken && authToken.includes('%3A%3A')) {
       authToken = authToken.split('%3A%3A')[1];
     }
+    if (authToken && authToken.includes('::')) {
+      authToken = authToken.split('::')[1];
+    }
+
     if (!messages || !Array.isArray(messages) || messages.length === 0 || !authToken) {
       return res.status(400).json({
         error: 'Invalid request. Messages should be a non-empty array and authorization is required',
@@ -33,7 +37,6 @@ app.post('/v1/chat/completions', async (req, res) => {
 
     const hexData = await stringToHex(messages, model);
 
-    // 获取 checksum
     const checksum = req.headers['x-cursor-checksum'] 
       ?? process.env['x-cursor-checksum'] 
       ?? generateCursorChecksum(authToken.trim());
@@ -139,7 +142,7 @@ app.post('/v1/chat/completions', async (req, res) => {
         if (error.name === 'TimeoutError') {
           return res.status(408).json({ error: 'Server response timeout' });
         }
-        throw error;  // 让外层错误处理来处理其他类型的错误
+        throw error;
       }
     }
   } catch (error) {
@@ -159,8 +162,7 @@ app.post('/v1/chat/completions', async (req, res) => {
   }
 });
 
-// 启动服务器
 const PORT = process.env.PORT || 3010;
 app.listen(PORT, () => {
-  console.log(`服务器运行在端口 ${PORT}`);
+  console.log(`The server listens port: ${PORT}`);
 });

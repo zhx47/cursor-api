@@ -19,7 +19,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     const { model, messages, stream = false } = req.body;
     let bearerToken = req.headers.authorization?.replace('Bearer ', '');
 
-    const keys = authToken.split(',').map((key) => key.trim());
+    const keys = bearerToken.split(',').map((key) => key.trim());
     // Random choose one key to use
     let authToken = keys[Math.floor(Math.random() * keys.length)]
 
